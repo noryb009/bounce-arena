@@ -1,4 +1,5 @@
 #pragma once
+
 #include <SDL2/SDL.h>
 
 #define BULLET_SIZE 10

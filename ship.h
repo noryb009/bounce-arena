@@ -1,5 +1,9 @@
 #pragma once
+
+#include <memory>
+
 #include <SDL2/SDL.h>
+
 #include "bullet.h"
 
 #define SHIP_SIZE 10
@@ -44,8 +48,8 @@ public:
             return t;
     }
 
-    bullet *spawn_bullet(double min_bound, double max_bound, Uint32 c) {
-        bullet *b = new bullet(x, y, pow2_sign(cos(deg)) * v * 2, pow2_sign(sin(deg)) * v * 2, c);
+    std::unique_ptr<bullet> spawn_bullet(double min_bound, double max_bound, Uint32 c) {
+        auto b = std::make_unique<bullet>(x, y, pow2_sign(cos(deg)) * v * 2, pow2_sign(sin(deg)) * v * 2, c);
         for(int i = 0; i < 3; ++i)
             b->move(min_bound, max_bound);
         return b;

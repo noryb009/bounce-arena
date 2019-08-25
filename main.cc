@@ -1,13 +1,13 @@
-#include <SDL2/SDL.h>
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <vector>
+
+#include <SDL2/SDL.h>
 
 #include "bullet.h"
 #include "ship.h"
-using namespace std;
 
 #define WIDTH 600
 #define HEIGHT 600
@@ -16,19 +16,19 @@ bool quit;
 bool running;
 SDL_Surface *screen;
 SDL_Window *window;
-vector<ship*> ships;
-vector<bullet*> bullets;
-typedef vector<ship*> shipvec;
-typedef shipvec::iterator ship_it;
-typedef vector<bullet*> bulletvec;
-typedef bulletvec::iterator bullet_it;
+
+using shipvec = std::vector<std::unique_ptr<ship>>;
+using bulletvec = std::vector<std::unique_ptr<bullet>>;
+
+shipvec ships;
+bulletvec bullets;
 
 void init() {
     quit = false;
     running = true;
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("error: %s\n", SDL_GetError());
+        std::cerr << "error: " << SDL_GetError() << "\n";
         exit(1);
     }
 
@@ -42,7 +42,7 @@ void init() {
     );
 
     if (window == NULL) {
-        printf("Could not create window: %s\n", SDL_GetError());
+        std::cerr << "Could not create window: " << SDL_GetError() << "\n";
         exit(1);
     }
 
@@ -55,15 +55,13 @@ void cleanup() {
     SDL_Quit();
 }
 
-bool did_collide(ship* s) {
+bool did_collide(std::unique_ptr<ship> &s) {
     if(s->sides(0, 600)) {
-        delete s;
         return true;
     }
 
-    for(bullet_it bit = bullets.begin(); bit != bullets.end(); ++bit) {
-        if(pow((*bit)->x - s->x, 2) + pow((*bit)->y - s->y, 2) < 20) {
-            delete s;
+    for(auto &b : bullets) {
+        if(pow(b->x - s->x, 2) + pow(b->y - s->y, 2) < 20) {
             return true;
         }
     }
@@ -74,12 +72,11 @@ void loop() {
     int maxBullet = 100;
     static int nextBullet = maxBullet;
 
-    for(bullet_it it = bullets.begin(); it != bullets.end(); ++it) {
-        (*it)->move(0, 600);
+    for(auto &b : bullets) {
+        b->move(0, 600);
     }
 
-    for(ship_it it = ships.begin(); it != ships.end(); ++it) {
-        ship *s = *it;
+    for(auto &s : ships) {
         s->move();
         if(nextBullet == 0)
             bullets.push_back(s->spawn_bullet(0, 600, SDL_MapRGB(screen->format, 0, 0, 255)));
@@ -96,52 +93,65 @@ void loop() {
 }
 
 void render() {
-    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+    SDL_FillRect(screen, nullptr, SDL_MapRGB(screen->format, 0, 0, 0));
 
-    for(ship_it it = ships.begin(); it != ships.end(); ++it) {
-        (*it)->move();
-        SDL_Rect r = (*it)->rect();
-        SDL_FillRect(screen, &r, (*it)->c);
+    for(auto &s : ships) {
+        s->move();
+        SDL_Rect r = s->rect();
+        SDL_FillRect(screen, &r, s->c);
     }
-    for(bullet_it it = bullets.begin(); it != bullets.end(); ++it) {
-        (*it)->move(0, 600);
-        SDL_Rect r = (*it)->rect();
-        SDL_FillRect(screen, &r, (*it)->c);
+    for(auto &b : bullets) {
+        b->move(0, 600);
+        SDL_Rect r = b->rect();
+        SDL_FillRect(screen, &r, b->c);
     }
 
     SDL_UpdateWindowSurface(window);
 }
 
 void onEvent(SDL_Event *e) {
-    if(e->type == SDL_QUIT)
+    if(e->type == SDL_QUIT) {
         quit = true;
+    }
 }
 
 void handleEvents() {
     SDL_Event e;
-    while(SDL_PollEvent(&e))
+    while(SDL_PollEvent(&e)) {
         onEvent(&e);
+    }
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     int np;
-    cout << "Number of players:" << endl;
-    cin >> np;
+
+    std::cout << "Number of players:" << std::endl;
+    std::cin >> np;
 
     init();
 
     while(!quit) {
-        ships.push_back(new ship(10, 10, 0, SDL_MapRGB(screen->format, 255, 0, 0), SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT));
-        if(np > 1)
-            ships.push_back(new ship(580, 580, M_PI, SDL_MapRGB(screen->format, 0, 255, 0), SDL_SCANCODE_A, SDL_SCANCODE_D));
-        if(np > 2)
-            ships.push_back(new ship(10, 580, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_V, SDL_SCANCODE_N));
-        if(np > 3)
-            ships.push_back(new ship(580, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_I, SDL_SCANCODE_P));
-        if(np > 4)
-            ships.push_back(new ship(10, 380, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_J, SDL_SCANCODE_K));
-        if(np > 5)
-            ships.push_back(new ship(380, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_MINUS, SDL_SCANCODE_EQUALS));
+        switch(np) {
+          case 6:
+            ships.push_back(std::make_unique<ship>(380, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_MINUS, SDL_SCANCODE_EQUALS));
+            [[fallthrough]];
+          case 5:
+            ships.push_back(std::make_unique<ship>(10, 380, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_J, SDL_SCANCODE_K));
+            [[fallthrough]];
+          case 4:
+            ships.push_back(std::make_unique<ship>(580, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_I, SDL_SCANCODE_P));
+            [[fallthrough]];
+          case 3:
+            ships.push_back(std::make_unique<ship>(10, 580, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_V, SDL_SCANCODE_N));
+            [[fallthrough]];
+          case 2:
+            ships.push_back(std::make_unique<ship>(580, 580, M_PI, SDL_MapRGB(screen->format, 0, 255, 0), SDL_SCANCODE_A, SDL_SCANCODE_D));
+            ships.push_back(std::make_unique<ship>(10, 10, 0, SDL_MapRGB(screen->format, 255, 0, 0), SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT));
+            break;
+          default:
+            std::cerr << "Only 2-6 players is supported." << std::endl;
+        }
+
         while(!quit && running) {
             handleEvents();
             loop();
@@ -149,13 +159,7 @@ int main(int argc, char* argv[]) {
             SDL_Delay(10);
         }
 
-        for(ship_it it = ships.begin(); it != ships.end(); ++it) {
-            delete *it;
-        }
         ships.clear();
-        for(bullet_it it = bullets.begin(); it != bullets.end(); ++it) {
-            delete *it;
-        }
         bullets.clear();
         running = true;
         if(!quit) {
