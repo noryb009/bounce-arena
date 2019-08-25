@@ -133,16 +133,16 @@ int main() {
     while(!quit) {
         switch(np) {
           case 6:
-            ships.push_back(std::make_unique<ship>(380, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_MINUS, SDL_SCANCODE_EQUALS));
+            ships.push_back(std::make_unique<ship>(580, 295, M_PI, SDL_MapRGB(screen->format, 255, 128, 0), SDL_SCANCODE_MINUS, SDL_SCANCODE_EQUALS));
             [[fallthrough]];
           case 5:
-            ships.push_back(std::make_unique<ship>(10, 380, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_J, SDL_SCANCODE_K));
+            ships.push_back(std::make_unique<ship>(10, 295, 0, SDL_MapRGB(screen->format, 0, 255, 255), SDL_SCANCODE_J, SDL_SCANCODE_K));
             [[fallthrough]];
           case 4:
             ships.push_back(std::make_unique<ship>(580, 10, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_I, SDL_SCANCODE_P));
             [[fallthrough]];
           case 3:
-            ships.push_back(std::make_unique<ship>(10, 580, M_PI, SDL_MapRGB(screen->format, 255, 0, 255), SDL_SCANCODE_V, SDL_SCANCODE_N));
+            ships.push_back(std::make_unique<ship>(10, 580, 0, SDL_MapRGB(screen->format, 255, 255, 0), SDL_SCANCODE_V, SDL_SCANCODE_N));
             [[fallthrough]];
           case 2:
             ships.push_back(std::make_unique<ship>(580, 580, M_PI, SDL_MapRGB(screen->format, 0, 255, 0), SDL_SCANCODE_A, SDL_SCANCODE_D));
@@ -150,6 +150,7 @@ int main() {
             break;
           default:
             std::cerr << "Only 2-6 players is supported." << std::endl;
+            return 1;
         }
 
         while(!quit && running) {
